@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universo kids - Painel Administrativo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background-color: #F8F9FA; color: #333; padding: 20px; }
+    
+    /* Esconde o painel até a senha ser validada */
+    .admin-container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      background: white; 
+      padding: 25px; 
+      border-radius: 16px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+      display: none; 
+    }
+
+    /* Tela de Login */
+    .login-container {
+      max-width: 380px;
+      margin: 80px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    
+    h2 { color: #FF5A8D; margin-bottom: 20px; font-size: 1.4rem; }
+    .form-group { margin-bottom: 15px; text-align: left; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #555; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
+    textarea { resize: vertical; height: 100px; }
+    .btn-submit { background: #FF5A8D; color: white; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 10px; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-submit:hover:not(:disabled) { opacity: 0.9; }
+    .upload-status { font-size: 0.8rem; color: #666; margin-top: 4px; display: block; }
+    .preview-container { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .preview-img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
+    .error-msg { color: #dc2626; font-size: 0.85rem; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Tela de Login -->
+  <div id="login-box" class="login-container">
+    <h2>🎈 Acesso Restrito</h2>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:15px;">Digite a senha do painel para cadastrar produtos.</p>
+    <div class="form-group">
+      <label>Senha de Acesso:</label>
+      <input type="password" id="input-senha" placeholder="Sua senha aqui" onkeydown="if(event.key==='Enter') verificarSenha()">
+    </div>
+    <button onclick="verificarSenha()" class="btn-submit">Entrar no Painel</button>
+    <p id="error-msg" class="error-msg">Senha incorreta! Tente novamente.</p>
+  </div>
+
+  <!-- Painel de Cadastro (Escondido por padrão) -->
+  <div id="admin-panel" class="admin-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 style="margin-bottom:0;">🎈 Cadastrar Novo Produto</h2>
+      <button onclick="sair()" style="background:#eee; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:0.8rem;">Sair 🔒</button>
+    </div>
+
+    <form id="product-form" onsubmit="saveProduct(event)">
+      
+      <div class="form-group">
+        <label>Nome do Produto:</label>
+        <input type="text" id="nome" required placeholder="Ex: Blusa Quadradinha Pence">
+      </div>
+
+      <div class="form-group">
+        <label>Categoria:</label>
+        <select id="categoria" required>
+          <option value="menina">Meninas</option>
+          <option value="menino">Meninos</option>
+          <option value="bebe">Bebês</option>
+          <option value="conjuntos">Conjuntos</option>
+          <option value="pijamas">Pijamas</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Preço (R$):</label>
+        <input type="number" step="0.01" id="preco" required placeholder="29.90">
+      </div>
+
+      <div class="form-group">
+        <label>Tamanhos (separados por vírgula):</label>
+        <input type="text" id="tamanhos" required placeholder="P, M, G ou 1, 2, 4, 6">
+      </div>
+
+      <div class="form-group">
+        <label>Fotos do Produto (Selecione uma ou mais fotos):</label>
+        <input type="file" id="image-file" accept="image/*" multiple required onchange="uploadImagesToImgBB(this)">
+        <span id="upload-status" class="upload-status">Nenhuma imagem selecionada.</span>
+        <div id="preview-list" class="preview-container"></div>
+        <input type="hidden" id="imagem-url">
+      </div>
+
+      <div class="form-group">
+        <label>Descrição do Produto:</label>
+        <textarea id="descricao" required placeholder="Escreva aqui os detalhes da peça, tecido, conforto, etc..."></textarea>
+      </div>
+
+      <button type="submit" id="save-btn" class="btn-submit">Salvar Produto na Loja</button>
+    </form>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // CONFIGURAÇÃO DA SENHA DE ACESSO
+    // -------------------------------------------------------------
+    const SENHA_CORRETA = "admin123"; // 👈 ALTERE A SUA SENHA AQUI!
+
+    // Verifica se já fez login anteriormente neste navegador
+    document.addEventListener("DOMContentLoaded", () => {
+      if (sessionStorage.getItem("admin_autenticado") === "true") {
+        exibirPainel();
+      }
+    });
+
+    function verificarSenha() {
+      const senhaInformada = document.getElementById("input-senha").value;
+      const errorMsg = document.getElementById("error-msg");
+
+      if (senhaInformada === SENHA_CORRETA) {
+        sessionStorage.setItem("admin_autenticado", "true");
+        errorMsg.style.display = "none";
+        exibirPainel();
+      } else {
+        errorMsg.style.display = "block";
+      }
+    }
+
+    function exibirPainel() {
+      document.getElementById("login-box").style.display = "none";
+      document.getElementById("admin-panel").style.display = "block";
+    }
+
+    function sair() {
+      sessionStorage.removeItem("admin_autenticado");
+      location.reload();
+    }
+
+    // -------------------------------------------------------------
+    // LÓGICA DE ENVIO DE IMAGENS E CADASTRO NO SHEETDB
+    // -------------------------------------------------------------
+    const SHEETDB_URL = "https://sheetdb.io/api/v1/s3b6boh5jg211";
+    const IMGBB_API_KEY = "188d98a0bc976b2b70d02fa2485afa9a"; 
+
+    async function uploadImagesToImgBB(input) {
+      const statusEl = document.getElementById("upload-status");
+      const urlInput = document.getElementById("imagem-url");
+      const previewList = document.getElementById("preview-list");
+      const submitBtn = document.getElementById("save-btn");
+
+      previewList.innerHTML = "";
+      urlInput.value = "";
+      
+      if (!input.files || input.files.length === 0) return;
+
+      const files = Array.from(input.files);
+      statusEl.textContent = `A enviar ${files.length} imagem(ns)...`;
+      statusEl.style.color = "#d97706";
+      submitBtn.disabled = true;
+
+      const uploadedUrls = [];
+
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const formData = new FormData();
+          formData.append("image", files[i]);
+
+          const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+            method: "POST",
+            body: formData
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            uploadedUrls.push(data.data.url);
+            
+            const img = document.createElement("img");
+            img.src = data.data.url;
+            img.className = "preview-img";
+            previewList.appendChild(img);
+          } else {
+            throw new Error(data.error?.message || "Erro ao enviar imagem");
+          }
+        }
+
+        urlInput.value = uploadedUrls.join(",");
+        statusEl.textContent = `✅ ${uploadedUrls.length} imagem(ns) carregada(s) com sucesso!`;
+        statusEl.style.color = "#16a34a";
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = "❌ Erro ao enviar algumas imagens. Tente novamente.";
+        statusEl.style.color = "#dc2626";
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    async function saveProduct(event) {
+      event.preventDefault();
+
+      const imageUrl = document.getElementById("imagem-url").value;
+      if (!imageUrl) {
+        alert("Por favor, aguarde o carregamento das imagens.");
+        return;
+      }
+
+      const newProduct = {
+        id: "id_" + Date.now(),
+        nome: document.getElementById("nome").value,
+        categoria: document.getElementById("categoria").value,
+        preco: document.getElementById("preco").value,
+        tamanhos: document.getElementById("tamanhos").value,
+        imagem: imageUrl,
+        emPromocao: "false",
+        precoPromocional: "",
+        descricao: document.getElementById("descricao").value
+      };
+
+      const submitBtn = document.getElementById("save-btn");
+      submitBtn.textContent = "A guardar produto...";
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch(SHEETDB_URL, {
+          method: "POST",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ data: [newProduct] })
+        });
+
+        if (response.ok) {
+          localStorage.removeItem("planetakids_products_cache");
+          localStorage.removeItem("planetakids_cache_time");
+
+          alert("🎉 Produto cadastrado com sucesso na loja!");
+          document.getElementById("product-form").reset();
+          document.getElementById("preview-list").innerHTML = "";
+          document.getElementById("upload-status").textContent = "Nenhuma imagem selecionada.";
+        } else {
+          alert("Erro ao guardar o produto na planilha.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Erro de conexão com a planilha.");
+      } finally {
+        submitBtn.textContent = "Salvar Produto na Loja";
+        submitBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universo Kids - Catálogo Online</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Cabeçalho (Rola junto com a página) -->
+  <header class="site-header">
+    <div class="header-container">
+      <img src="logo.jpg" alt="Planeta Kids Logo" class="brand-logo">
+      <div class="brand-info">
+        <h1 class="brand-name">Universo Kids</h1>
+        <p class="brand-subtitle">Moda Infantil & Acessórios</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Menu de Categorias -->
+    <nav class="categories-wrapper">
+      <div id="categories-container" class="categories-container">
+        <!-- Categorias geradas via JS -->
+      </div>
+    </nav>
+
+    <!-- Barra de Controle (Contador e Filtro) -->
+    <section class="controls-bar">
+      <span id="results-count" class="results-count">A carregar produtos...</span>
+      <select id="sort-select" class="sort-select">
+        <option value="featured">Em Destaque</option>
+        <option value="price-asc">Menor Preço</option>
+        <option value="price-desc">Maior Preço</option>
+        <option value="name-asc">Nome (A-Z)</option>
+      </select>
+    </section>
+
+    <!-- Grelha de Produtos -->
+    <section id="products-grid" class="products-grid">
+      <!-- Produtos inseridos via JS -->
+    </section>
+  </main>
+
+  <!-- Modal do Produto (Bottom Sheet no Mobile) -->
+  <div id="product-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button id="modal-close-btn" class="modal-close">&times;</button>
+      <div id="modal-body-content">
+        <!-- Detalhes do produto inseridos via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Botão Flutuante do Carrinho -->
+  <button id="cart-float-btn" onclick="toggleCartModal()">
+    🛒 <span id="cart-counter">0</span>
+  </button>
+
+  <!-- Modal / Gaveta do Carrinho -->
+  <div id="cart-modal" class="modal-overlay">
+    <div class="cart-modal-content">
+      <div class="cart-header">
+        <h3>🛍️ Seu Carrinho</h3>
+        <button onclick="toggleCartModal()" class="close-cart-btn">&times;</button>
+      </div>
+      
+      <div id="cart-items-container" class="cart-items-list">
+        <!-- Itens do carrinho aparecem aqui -->
+      </div>
+
+      <div class="cart-footer">
+        <div class="cart-total">
+          <span>Total:</span>
+          <strong id="cart-total-price">R$ 0,00</strong>
+        </div>
+        <button onclick="sendCartToWhatsApp()" class="btn-whatsapp-cart">
+          💬 Enviar Pedido via WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
